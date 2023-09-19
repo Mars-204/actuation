@@ -627,8 +627,16 @@ def execDrivingControl():
     car_api = CarApi()
     global CAR_SPEED_CAP
     servo_perc_prev = 0
-    time_release_stop = 0
-    time_release_arrow = 0
+    time_release_stop = 2
+    time_release_exit = 2
+
+    # Variables to execute action
+    isDetectionUpdate = False
+    isStop = False
+    isExit = False
+    exit_turn_angle = 100
+    exit_motor_power = MOTOR_MIN_PERC
+
 
     # Start distance measurement
     car_api.startContDistMeas()
@@ -651,18 +659,50 @@ def execDrivingControl():
         #     car_api.setMotorPower(0)
         #     continue
 
+        # If there is a command from server, update isStop and isExit (exit at EV sign)
+        # --Receiving stop command queue--
+        # if qitem[0] is QueueItemType.StopCommand:
+        #   isStop = True
+        # --Receiving EV sign (exit) command queue--
+        # if qitem[0] is QueueItemType.ExitCommand:
+        #   isExit = True
+
         # Queue item is servo percentage
         if qitem[0] is QueueItemType.ServoPerc:
-            # Use LPF to smooth the percentage
-            servo_perc = SERVO_LPF_COEF*servo_perc_prev + (1 - SERVO_LPF_COEF)*qitem[1]
-            servo_perc_prev = servo_perc
-            car_api.setSteeringAngle(servo_perc)
+            # If there's command from server to stop
+            if isStop:
+                car_api.setSteeringAngle(0)
+                car_api.setMotorPower(0)
+                time.sleep(time_release_stop)
+                isStop = False
+            # Normal operation: updating steering angle and motor power based the detection algorithm
+            else:
+                # Use LPF to smooth the percentage
+                servo_perc = SERVO_LPF_COEF*servo_perc_prev + (1 - SERVO_LPF_COEF)*qitem[1]
+                servo_perc_prev = servo_perc
+                car_api.setSteeringAngle(servo_perc)
 
-            # Calculate the motor percentual power
-            motor_perc = min(100 - abs(servo_perc)*MOTOR_SPEED_TURN_COEF + MOTOR_MIN_PERC, CAR_SPEED_CAP)
-            car_api.setMotorPower(motor_perc)
+                # Calculate the motor percentual power
+                motor_perc = min(100 - abs(servo_perc)*MOTOR_SPEED_TURN_COEF + MOTOR_MIN_PERC, CAR_SPEED_CAP)
+                car_api.setMotorPower(motor_perc)
 
         # Queue item is a sign
+        elif qitem[0] is QueueItemType.SignEv:
+            # If there's command from server to exit the circuit at EV sign
+            if isExit:
+                # Turn the car
+                car_api.setSteeringAngle(exit_turn_angle)
+                car_api.setMotorPower(exit_motor_power)
+                time.sleep(time_release_exit)
+                # Go straight exiting the track
+                car_api.setSteeringAngle(0)
+                car_api.setMotorPower(exit_motor_power)
+                time.sleep(time_release_exit)
+                isExit = False
+                # print("EV Sign")
+            else:
+                # print("EV Sign")
+                pass
         elif qitem[0] is QueueItemType.SignStop:
             # time_release_stop = time.perf_counter() + 4  # Wait for X seconds
             pass
@@ -716,6 +756,7 @@ def execDrivingControl():
         elif qitem[0] is QueueItemType.SignCarF:
             # print("FRONT CAR F")        
             pass
+
 
     # Leave the actuators in a neutral state
     car_api.setMotorPower(0)
