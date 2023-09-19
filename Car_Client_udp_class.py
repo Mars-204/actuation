@@ -108,22 +108,28 @@ class CarClient():
                 car_stop = False
                 car_ev_sign = False
                 if self.Pkt_from_Server['ID_Client'] == g_id_car:
-                    g_cmd_code = self.Pkt_from_Server['Cmd_Code'] 
-                    if (g_cmd_code == 0x01) : 
-                        print('break\n')
-                        # stop the car
-                    elif (g_cmd_code == 0x02): 
-                        print('stop charge station\n')
-                        car_ev_sign = True
-                        # stop when detects charging station
-                    elif (g_cmd_code == 0x03): 
-                        print('accident on track\n')
-                    elif (g_cmd_code == 0x04): 
-                        print('stop car\n')
+                    if "STOP" in self.Pkt_from_Server.values():
                         car_stop = True
-                        # stop the car at g_id_track sector
-                    elif (g_cmd_code == 0x05): 
-                        print('wet track\n')
-                        # reduce the speed to 30% 
+                        print('Stop car now')
+                    elif "Stop after Charging" in self.Pkt_from_Server.values():
+                        car_ev_sign = True
+                        print('Stopping once charging sign is seen')
+                    # g_cmd_code = self.Pkt_from_Server['Cmd_Code'] 
+                    # if (g_cmd_code == 0x01) : 
+                    #     print('break\n')
+                    #     # stop the car
+                    # elif (g_cmd_code == 0x02): 
+                    #     print('stop charge station\n')
+                    #     car_ev_sign = True
+                    #     # stop when detects charging station
+                    # elif (g_cmd_code == 0x03): 
+                    #     print('accident on track\n')
+                    # elif (g_cmd_code == 0x04): 
+                    #     print('stop car\n')
+                    #     car_stop = True
+                    #     # stop the car at g_id_track sector
+                    # elif (g_cmd_code == 0x05): 
+                    #     print('wet track\n')
+                    #     # reduce the speed to 30% 
         return car_stop, car_ev_sign
 
