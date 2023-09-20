@@ -111,7 +111,7 @@ class CarClient():
                     if "STOP" in self.Pkt_from_Server.values():
                         car_stop = True
                         print('Stop car now')
-                    elif "Stop after Charging" in self.Pkt_from_Server.values():
+                    elif "Charge Station" in self.Pkt_from_Server.values():
                         car_ev_sign = True
                         print('Stopping once charging sign is seen')
                     # g_cmd_code = self.Pkt_from_Server['Cmd_Code'] 
